@@ -1,6 +1,5 @@
-
 CircuitConfig.h
-
+.vscode/ipch/*
 # Prerequisites
 *.d
 
