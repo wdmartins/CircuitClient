@@ -27,7 +27,8 @@ class CircuitClient {
     int postTextMessage(String text);
     void setOnNewTextItemCallBack( void (*func)(String) );
     void run();
-  
+    const char * getConversationId();
+
   protected:
     void _deleteAllWebHooks(void);
     void (*_onNewTextItemCB)(String);

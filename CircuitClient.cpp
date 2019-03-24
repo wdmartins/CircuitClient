@@ -7,6 +7,7 @@
 
 HTTPClient http;
 ESP8266WebServer server(WEBSERVER_PORT);
+CircuitClient *client;
 
 void _debug(char *text) {
     #ifdef DEBUG_CIRCUIT_CLIENT
@@ -32,10 +33,6 @@ void handleNotFound() {
 }
 
 void onNewTextItem(void) {
-    for(int i=0; i < server.args(); i++) {
-        _debug(server.argName(i));
-        _debug(server.arg(i));
-    }
     if (server.hasArg("plain")) {
         _debug(server.arg("plain"));
         StaticJsonDocument<2000> doc;
@@ -44,15 +41,25 @@ void onNewTextItem(void) {
             _debug("Error deserializing message body");
             _debug(error.c_str());
             _debug(server.arg("plain"));
+            server.send(500, "Error deserializing json");
+            return;
         } else {
-            // TODO: Check for conversationId
-            _debug("Received Text Item: ");
-            _debug((const char*)(doc["item"]["text"]["content"]));
-            // TODO: Invoke callbaclk
-
+            const char* newText = doc["item"]["text"]["content"];
+            if (!newText) {
+                server.send(400, "No text found in body");
+                return;
+            }
+            const char* convId = doc["item"]["convId"];
+            if (strncmp(client->getConversationId(), convId, strlen(client->getConversationId())) == 0) {
+                _debug("Received Text Item: ");
+                _debug(newText);
+                // TODO: Invoke callbaclk
+            }
         }
     } else {
         _debug("No body on HTTP request for new text message");
+        server.send(400, "No body on request");
+        return;
     }
     server.send(200);
 }
@@ -64,6 +71,7 @@ CircuitClient::CircuitClient(String domain, char* credentials)
     _deleteAllWebHooks();
     _debug("HTTP server configured on port:");
     _debug(WEBSERVER_PORT);
+    client = this;
 }
 
 void CircuitClient::setConversationId(String convId) {
@@ -71,7 +79,7 @@ void CircuitClient::setConversationId(String convId) {
 }
 
 int CircuitClient::postTextMessage(String textMessage) {
-    if (_convId) {
+    if (strlen(_convId.c_str()) == 0) {
         _debug("Cannot post message without conversation id");
         return -1;
     }
@@ -141,5 +149,9 @@ void CircuitClient::_getAllWebhooks() {
     String payload = http.getString();
     _debug(payload);
     http.end();
+}
+
+const char *CircuitClient::getConversationId() {
+    return _convId.c_str();
 }
 
