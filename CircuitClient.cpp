@@ -40,7 +40,6 @@ void onNewTextItem(void) {
         if (error) {
             _debug("Error deserializing message body");
             _debug(error.c_str());
-            _debug(server.arg("plain"));
             server.send(500, "Error deserializing json");
             return;
         } else {
@@ -53,7 +52,11 @@ void onNewTextItem(void) {
             if (strncmp(client->getConversationId(), convId, strlen(client->getConversationId())) == 0) {
                 _debug("Received Text Item: ");
                 _debug(newText);
-                // TODO: Invoke callbaclk
+                //TODO: Invoke callback
+                fptr cb = client->getOnNewTextItemCallBack();
+                if (cb != NULL) {
+                    cb(newText);
+                }
             }
         }
     } else {
@@ -155,3 +158,6 @@ const char *CircuitClient::getConversationId() {
     return _convId.c_str();
 }
 
+fptr CircuitClient::getOnNewTextItemCallBack() {
+    return _onNewTextItemCB;
+}

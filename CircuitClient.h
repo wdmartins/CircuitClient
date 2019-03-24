@@ -18,7 +18,7 @@
 #define CIRCUIT_WEBHOOKS_URL "/webhooks"
 #define DEBUG_CIRCUIT_CLIENT
 #define DEBUG_OUTPUT Serial
-
+typedef void (*fptr)(String);
 class CircuitClient {
   public:
     CircuitClient(String domain, char* credentials);
@@ -28,6 +28,7 @@ class CircuitClient {
     void setOnNewTextItemCallBack( void (*func)(String) );
     void run();
     const char * getConversationId();
+    fptr getOnNewTextItemCallBack(void);
 
   protected:
     void _deleteAllWebHooks(void);
