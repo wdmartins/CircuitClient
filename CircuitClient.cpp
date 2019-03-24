@@ -3,6 +3,8 @@
  * Created by Walter D. Martins, March 21, 2019
  */
 #include "CircuitClient.h"
+#include "ArduinoJson.h"
+
 HTTPClient http;
 ESP8266WebServer server(WEBSERVER_PORT);
 
@@ -77,7 +79,7 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
     String url = "https://" + this->domain + REST_API_VERSION_URL + CIRCUIT_WEBHOOKS_URL;
     http.begin(url, CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(this->credentials);
-    String content = String("{\"url\":\"") + MY_WEBHOOKS_URL + ":8000" + "/newTextItem\",\"filter\":[\"CONVERSATION.ADD_ITEM\"]}";
+    String content = String("{\"url\":\"") + MY_WEBHOOKS_URL + ":80" + "/newTextItem\",\"filter\":[\"CONVERSATION.ADD_ITEM\"]}";
     Serial.println(content);
     int httpCode = http.POST(content);
     Serial.println("Webhook for new text item ended with code: ");
@@ -87,9 +89,24 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
 }
 
 void onNewTextItem(void) {
-    if (server.hasArg("json")) {
-        Serial.println(server.arg("json"));
-        // TODO: Invoke callbaclk
+    for(int i=0; i < server.args(); i++) {
+        Serial.println(server.argName(i));
+        Serial.println(server.arg(i));
+    }
+    if (server.hasArg("plain")) {
+        Serial.println(server.arg("plain"));
+        StaticJsonDocument<2000> doc;
+        DeserializationError error = deserializeJson(doc, server.arg("plain"));
+        if (error) {
+            Serial.println("Error deserializing message body");
+            Serial.println(error.c_str());
+            Serial.println(server.arg("plain"));
+        } else {
+            Serial.println("Received Text Item: ");
+            Serial.println((const char*)(doc["item"]["text"]["content"]));
+            // TODO: Invoke callbaclk
+
+        }
     } else {
         Serial.println("No body on HTTP request for new text message");
     }
@@ -108,7 +125,7 @@ void CircuitClient::run() {
 }
 
 void CircuitClient::getAllWebhooks() {
-    Serial.println("Delete all circuit webhooks");
+    Serial.println("Get all circuit webhooks");
     String url = "https://" + this->domain + REST_API_VERSION_URL + CIRCUIT_WEBHOOKS_URL;
     http.begin(url, CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(this->credentials);
