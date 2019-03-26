@@ -6,7 +6,7 @@
 #include "ArduinoJson.h"
 
 HTTPClient http;
-ESP8266WebServer server(WEBSERVER_PORT);
+ESP8266WebServer server(atoi(WEBSERVER_PORT));
 CircuitClient *client;
 
 void _debug(char *text) {
@@ -121,7 +121,7 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
     String url = "https://" + _domain + REST_API_VERSION_URL + CIRCUIT_WEBHOOKS_URL;
     http.begin(url, CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(_credentials);
-    String content = String("{\"url\":\"") + MY_WEBHOOKS_URL + ":80" + "/newTextItem\",\"filter\":[\"CONVERSATION.ADD_ITEM\"]}";
+    String content = String("{\"url\":\"") + MY_WEBHOOKS_URL + ":" + WEBSERVER_PORT + "/newTextItem\",\"filter\":[\"CONVERSATION.ADD_ITEM\"]}";
     _debug(content);
     int httpCode = http.POST(content);
     _debug("Webhook for new text item ended with code: ");
