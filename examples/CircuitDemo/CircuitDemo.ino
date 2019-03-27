@@ -65,8 +65,10 @@ void setup() {
   // Configure Circuit Client library
   circuitClient = new CircuitClient(CIRCUIT_DOMAIN, BASE64_CREDENTIALS);
   circuitClient->setConversationId(CIRCUIT_CONV_ID);
-  circuitClient->postTextMessage("Hello World!");
   circuitClient->setOnNewTextItemCallBack(onNewTextItemCB);
+
+  // Post message to Circuit conversation
+  circuitClient->postTextMessage("Hello World!");
 
   // Show setup finished and app is ready
   lcd.clear();

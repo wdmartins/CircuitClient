@@ -40,7 +40,7 @@ class CircuitClient {
     void _startServer(void);
     void _getAllWebhooks(void);
     void _handleNotFound(void);
-    void _onNewTextItem(void);
+    void _handleNewTextItem(void);
 };
 
 #endif //CIRCUIT_CLIENT_H

@@ -7,7 +7,6 @@
 
 HTTPClient http;
 ESP8266WebServer server(atoi(WEBSERVER_PORT));
-CircuitClient *client;
 
 void _debug(char *text) {
     #ifdef DEBUG_CIRCUIT_CLIENT
@@ -27,12 +26,13 @@ void _debug(int text) {
     #endif
 }
 
-void handleNotFound() {
+void CircuitClient::_handleNotFound() {
     _debug(server.uri());
     _debug("Request not handled");
+    server.send(404);
 }
 
-void onNewTextItem(void) {
+void CircuitClient::_handleNewTextItem(void) {
     if (server.hasArg("plain")) {
         _debug(server.arg("plain"));
         StaticJsonDocument<2000> doc;
@@ -49,11 +49,10 @@ void onNewTextItem(void) {
                 return;
             }
             const char* convId = doc["item"]["convId"];
-            if (strncmp(client->getConversationId(), convId, strlen(client->getConversationId())) == 0) {
+            if (strncmp(this->getConversationId(), convId, strlen(this->getConversationId())) == 0) {
                 _debug("Received Text Item: ");
                 _debug(newText);
-                //TODO: Invoke callback
-                fptr cb = client->getOnNewTextItemCallBack();
+                fptr cb = this->getOnNewTextItemCallBack();
                 if (cb != NULL) {
                     cb(newText);
                 }
@@ -74,7 +73,6 @@ CircuitClient::CircuitClient(String domain, char* credentials)
     _deleteAllWebHooks();
     _debug("HTTP server configured on port:");
     _debug(WEBSERVER_PORT);
-    client = this;
 }
 
 void CircuitClient::setConversationId(String convId) {
@@ -115,7 +113,7 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
     _onNewTextItemCB = callback;
     if (!_server_started) {
         _startServer();
-        server.on("/newTextItem", onNewTextItem);
+        server.on("/newTextItem", std::bind(&CircuitClient::_handleNewTextItem, this));
     }
     // Register webhook
     String url = "https://" + _domain + REST_API_VERSION_URL + CIRCUIT_WEBHOOKS_URL;
@@ -132,7 +130,7 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
 
 void CircuitClient::_startServer() {
     server.begin();
-    server.onNotFound(handleNotFound);
+    server.onNotFound(std::bind(&CircuitClient::_handleNotFound, this));
     _debug("HTTP Server started...");
     _server_started = true;
 }
