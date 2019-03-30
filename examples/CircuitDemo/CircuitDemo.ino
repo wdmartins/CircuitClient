@@ -183,7 +183,7 @@ void loop() {
       if (buttonState == 1) {
         //Report temperature
         char temp[100];
-        sprintf(temp, "On Demand Repot: Temperature %d, Humidity %d", static_cast<int>(currentTemperature), static_cast<int>(currentHumidity));
+        sprintf(temp, "On Demand Report: Temperature %d, Humidity %d", static_cast<int>(currentTemperature), static_cast<int>(currentHumidity));
         circuitClient->postTextMessage(temp);
       }
     }
