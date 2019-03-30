@@ -15,6 +15,7 @@
 
 // GPIO Definitios
 #define DHT11_GPIO 2
+#define BUTTON_GPIO 0
 
 // Sensors Definitions
 #define DHT_TYPE DHT11
@@ -27,6 +28,7 @@ DHT_Unified dht(DHT11_GPIO, DHT_TYPE);
 // Intervals
 Ticker ledTicker;
 Ticker dhtTicker;
+Ticker buttonTicker;
 
 // Circuit Client declaration
 CircuitClient *circuitClient;
@@ -38,6 +40,8 @@ uint32_t dht11DelayMS;
 float currentTemperature = -300;
 float currentHumidity= -1;
 boolean updateDht11 = false;
+boolean checkButton = false;
+int buttonState = 0;
 
 void ledTick() {
   int state = digitalRead(BUILTIN_LED);
@@ -61,6 +65,10 @@ void onNewTextItemCB (String text) {
 
 void setUpdateDht11() {
   updateDht11 = !updateDht11;
+}
+
+void changeCheckButton() {
+  checkButton = !checkButton;
 }
 
 void processDhtInfo () {
@@ -144,6 +152,9 @@ void setup() {
   lcd.backlight();
   lcd.print("Ready!");
 
+  // Setup GPIO for buttong
+  pinMode(BUTTON_GPIO, INPUT);
+
   // Initialize DTH11 Sensor
   dht.begin();
   sensor_t sensor;
@@ -151,7 +162,7 @@ void setup() {
   dht11DelayMS = sensor.min_delay / 1000;
   Serial.print(F("Sensor Minimun Delay:")); Serial.print(dht11DelayMS); Serial.println(F(" MS"));
   dhtTicker.attach(dht11DelayMS / 1000, setUpdateDht11);
-  
+  buttonTicker.attach(0.2, changeCheckButton);
 }
 
 void loop() {
@@ -161,5 +172,20 @@ void loop() {
   // Check temperature
   if (updateDht11) {
     processDhtInfo();
+  }
+
+  // Check button
+  if (checkButton) {
+    int newButtonState = digitalRead(BUTTON_GPIO);
+    if (buttonState != newButtonState) {
+      Serial.println("Button State Changed");
+      buttonState = newButtonState;
+      if (buttonState == 1) {
+        //Report temperature
+        char temp[100];
+        sprintf(temp, "On Demand Repot: Temperature %d, Humidity %d", static_cast<int>(currentTemperature), static_cast<int>(currentHumidity));
+        circuitClient->postTextMessage(temp);
+      }
+    }
   }
 }
