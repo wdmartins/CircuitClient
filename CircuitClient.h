@@ -6,11 +6,13 @@
 #define CIRCUIT_CLIENT_H
 
 #include "Arduino.h"
-#include <ESP8266WiFi.h>
-#include <WiFiClient.h>
+#include <CircuitConfig.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
-#include <CircuitConfig.h>
+
+// Circuit Domains Definitions
+#define SANDBOX_URL "circuitsandbox.net"
+#define SANDBOX_FINGERPRINT "E2:D8:96:33:4F:F7:A3:66:AF:EF:A2:04:11:9C:39:D8:D6:DD:DA:95"
 
 #define REST_API_VERSION_URL "/rest/v2"
 #define CONV_ENDPOINT_URL "/conversations/"
@@ -25,7 +27,8 @@
 typedef void (*fptr)(String);
 class CircuitClient {
   public:
-    CircuitClient(String domain, char* credentials);
+    CircuitClient(String domain, char* credentials, String convId);
+    CircuitClient(char *credentials, String convId);
     
     void setConversationId(String convId);
     int postTextMessage(String text);
@@ -33,22 +36,22 @@ class CircuitClient {
     void run();
 
   protected:
-    void _deleteAllWebHooks(void);
     void (*_onNewTextItemCB)(String);
     String _domain;
     char * _credentials;
     char _userId[UUID_LENGHT];
     String _convId;
     bool _server_started;
-    void _startServer(void);
+    void _deleteAllWebHooks(void);
     void _getAllWebhooks(void);
-    void _handleNotFound(void);
-    void _handleNewTextItem(void);
-    void _getUserProfile(void);
     String _getBaseUrl(void);
-    String _getWebHooksUrl(void);
     String _getConversationUrl(void);
+    void _getUserProfile(void);
     String _getUserProfileUrl(void);
+    String _getWebHooksUrl(void);
+    void _handleNewTextItem(void);
+    void _handleNotFound(void);
+    void _startServer(void);
 };
 
 #endif //CIRCUIT_CLIENT_H

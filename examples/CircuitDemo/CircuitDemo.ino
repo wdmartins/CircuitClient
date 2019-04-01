@@ -1,13 +1,10 @@
-#include <LiquidCrystal_I2C.h>
-#include <ESP8266WiFi.h>
-#include <DNSServer.h>
-#include <ESP8266WebServer.h>
 #include <WiFiManager.h>
-#include <CircuitClient.h>
 #include <Ticker.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
+#include <LiquidCrystal_I2C.h>
+#include <CircuitClient.h>
 
 // Access point to configure Wi-Fi
 #define ACCESS_POINT_NAME "ESP8266"
@@ -37,6 +34,7 @@ CircuitClient *circuitClient;
 // Setup Liquid crystal display
 LiquidCrystal_I2C lcd(0x27, 16 ,2);
 
+// Global variables
 uint32_t dht11DelayMS;
 float currentTemperature = -300;
 float currentHumidity= -1;
@@ -45,6 +43,7 @@ boolean displayingText = false;
 boolean checkButton = false;
 int buttonState = 0;
 
+// Builtin LED flashing
 void ledTick() {
   int state = digitalRead(BUILTIN_LED);
   digitalWrite(BUILTIN_LED, !state);
@@ -58,6 +57,7 @@ void configModeCallback (WiFiManager *myWiFiManager) {
   ledTicker.attach(0.2, ledTick);
 }
 
+// Circuit text display timeout
 void stopDisplaying() {
   textDisplayTicker.detach();
   displayingText = false;
@@ -82,6 +82,7 @@ void changeCheckButton() {
   checkButton = !checkButton;
 }
 
+// Display temperature and humidity to LCD display
 void displayTemp(char *tempText) {
   sprintf(tempText, "Temp %d, Hum %d", static_cast<int>(currentTemperature), static_cast<int>(currentHumidity));
   lcd.setCursor(0,1);
@@ -89,6 +90,7 @@ void displayTemp(char *tempText) {
   lcd.print(tempText);
 }
 
+// Query temperature sensor and process changes
 void processDhtInfo () {
   boolean report = false;
   sensors_event_t event;
@@ -155,7 +157,7 @@ void setup() {
   digitalWrite(BUILTIN_LED, LOW);
 
   // Configure Circuit Client library
-  circuitClient = new CircuitClient(CIRCUIT_DOMAIN, BASE64_CREDENTIALS);
+  circuitClient = new CircuitClient(BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
   circuitClient->setConversationId(CIRCUIT_CONV_ID);
   circuitClient->setOnNewTextItemCallBack(onNewTextItemCB);
 

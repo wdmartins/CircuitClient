@@ -29,12 +29,22 @@ void _debug(int text) {
     #endif
 }
 
+#ifndef CIRCUIT_DOMAIN
+#define CIRCUIT_DOMAIN SANDBOX_URL
+#define CIRCUIT_DOMAIN_FINGERPRINT SANDBOX_FINGERPRINT
+#endif
+
+
 /**
  * Circuit Client
  **/
-CircuitClient::CircuitClient(String domain, char* credentials)
+CircuitClient::CircuitClient(char* credentials, String convId)
+: CircuitClient(CIRCUIT_DOMAIN, credentials, convId) {};
+
+CircuitClient::CircuitClient(String domain, char* credentials, String convId) 
 : _domain(domain)
 , _credentials(credentials)
+, _convId(convId)
 , _server_started(false) {
     strcpy(_userId,"\0");
     _deleteAllWebHooks();
