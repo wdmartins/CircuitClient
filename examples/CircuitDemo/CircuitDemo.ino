@@ -29,6 +29,7 @@ DHT_Unified dht(DHT11_GPIO, DHT_TYPE);
 Ticker ledTicker;
 Ticker dhtTicker;
 Ticker buttonTicker;
+Ticker textDisplayTicker;
 
 // Circuit Client declaration
 CircuitClient *circuitClient;
@@ -40,6 +41,7 @@ uint32_t dht11DelayMS;
 float currentTemperature = -300;
 float currentHumidity= -1;
 boolean updateDht11 = false;
+boolean displayingText = false;
 boolean checkButton = false;
 int buttonState = 0;
 
@@ -56,11 +58,20 @@ void configModeCallback (WiFiManager *myWiFiManager) {
   ledTicker.attach(0.2, ledTick);
 }
 
+void stopDisplaying() {
+  textDisplayTicker.detach();
+  displayingText = false;
+  char tempText[17];
+  displayTemp(tempText);
+}
+
 // Circuit new text item callback
 void onNewTextItemCB (String text) {
   Serial.print("Text Received: "); Serial.println(text);
+  displayingText = true;
   lcd.clear();
   lcd.print(text.c_str());
+  textDisplayTicker.attach(5, stopDisplaying);
 }
 
 void setUpdateDht11() {
@@ -69,6 +80,13 @@ void setUpdateDht11() {
 
 void changeCheckButton() {
   checkButton = !checkButton;
+}
+
+void displayTemp(char *tempText) {
+  sprintf(tempText, "Temp %d, Hum %d", static_cast<int>(currentTemperature), static_cast<int>(currentHumidity));
+  lcd.setCursor(0,1);
+  lcd.clear();
+  lcd.print(tempText);
 }
 
 void processDhtInfo () {
@@ -106,12 +124,9 @@ void processDhtInfo () {
   currentHumidity = humidity;
   if (report) {
     Serial.print("Reporting temperature: "); Serial.print(temp); Serial.print(" and humidity: "); Serial.println(currentHumidity);
-    char temp[17];
-    sprintf(temp, "Temp %d, Hum %d", static_cast<int>(currentTemperature), static_cast<int>(currentHumidity));
-    lcd.setCursor(0,1);
-    lcd.clear();
-    lcd.print(temp);
-    circuitClient->postTextMessage(temp);
+    char tempText[17];
+    displayTemp(tempText);
+    circuitClient->postTextMessage(tempText);
   }
 }
 
@@ -170,7 +185,7 @@ void loop() {
   circuitClient->run();
 
   // Check temperature
-  if (updateDht11) {
+  if (updateDht11 && !displayingText) {
     processDhtInfo();
   }
 
