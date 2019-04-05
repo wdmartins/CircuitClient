@@ -13,19 +13,19 @@ ESP8266WebServer server(atoi(WEBSERVER_PORT));
  **/
 void _debug(char *text) {
     #ifdef DEBUG_CIRCUIT_CLIENT
-        DEBUG_OUTPUT.println(text);
+        DEBUG_OUTPUT.print("CIRCUIT:"); DEBUG_OUTPUT.println(text);
     #endif
 }
 
 void _debug(String text) {
     #ifdef DEBUG_CIRCUIT_CLIENT
-        DEBUG_OUTPUT.println(text);
+        DEBUG_OUTPUT.print("CIRCUIT:"); DEBUG_OUTPUT.println(text);
     #endif
 }
 
 void _debug(int text) {
     #ifdef DEBUG_CIRCUIT_CLIENT
-        DEBUG_OUTPUT.println(text);
+        DEBUG_OUTPUT.print("CIRCUIT:"); DEBUG_OUTPUT.println(text);
     #endif
 }
 
@@ -91,6 +91,29 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
     _debug(httpCode);
     http.end();
     _getAllWebhooks();
+}
+
+const char *CircuitClient::getUserPresence(char *userId) {
+    http.begin(_getUserPresenceUrl(userId), CIRCUIT_DOMAIN_FINGERPRINT);
+    http.setAuthorization(_credentials);
+    int httpCode = http.GET();
+    _debug("Getting User Presence ended with code: ");
+    _debug(httpCode);
+    String payload = http.getString();
+    _debug(payload);
+    http.end();
+    StaticJsonDocument<1000> doc;
+    DeserializationError error = deserializeJson(doc, payload);
+    if (error) {
+        _debug("Error deserializing message body");
+        _debug(error.c_str());
+        return "Unknown";
+    }
+    return doc[0]["state"];
+}
+
+void CircuitClient::setOnUserPresenceChange(char* userId, void (*func)(String) ) {
+    //TODO
 }
 
 void CircuitClient::run() {
@@ -191,6 +214,10 @@ String CircuitClient::_getConversationUrl() {
 
 String CircuitClient::_getUserProfileUrl() {
     return String(_getBaseUrl() + USER_PROFILE_ENDPOINT_URL);
+}
+
+String CircuitClient::_getUserPresenceUrl(char *userId) {
+    return String(_getBaseUrl() + USER_PRESENCE_ENDPOINT_URL + "?userIds=" + userId);
 }
 
 void CircuitClient::_startServer() {

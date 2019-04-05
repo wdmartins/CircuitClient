@@ -19,12 +19,20 @@
 #define MESSAGES_ENDPOINT_URL "/messages"
 #define CIRCUIT_WEBHOOKS_URL "/webhooks"
 #define USER_PROFILE_ENDPOINT_URL "/users/profile"
+#define USER_PRESENCE_ENDPOINT_URL "/users/presence"
+#define USER_PRESENCE_WEBHOOK_URL "/presence"
 #define UUID_LENGHT 61
 
 #define DEBUG_CIRCUIT_CLIENT
 #define DEBUG_OUTPUT Serial
 
+#define PRESENCE_BUSY "BUSY"
+#define PRESENCE_AVAILABLE "AVAILABLE"
+#define PRESENCE_AWAY "AWAY"
+#define PRESENCE_DND "DND"
+
 typedef void (*fptr)(String);
+
 class CircuitClient {
   public:
     CircuitClient(String domain, char* credentials, String convId);
@@ -33,10 +41,13 @@ class CircuitClient {
     void setConversationId(String convId);
     int postTextMessage(String text);
     void setOnNewTextItemCallBack( void (*func)(String) );
+    const char *getUserPresence(char* userId);
+    void setOnUserPresenceChange(char* userId, void (*func)(String) );
     void run();
 
   protected:
     void (*_onNewTextItemCB)(String);
+    void (*_onUserPresenceChangeCB)(String);
     String _domain;
     char * _credentials;
     char _userId[UUID_LENGHT];
@@ -47,6 +58,7 @@ class CircuitClient {
     String _getBaseUrl(void);
     String _getConversationUrl(void);
     void _getUserProfile(void);
+    String _getUserPresenceUrl(char *);
     String _getUserProfileUrl(void);
     String _getWebHooksUrl(void);
     void _handleNewTextItem(void);

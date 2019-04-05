@@ -12,7 +12,10 @@
 
 // GPIO Definitios
 #define DHT11_GPIO 2
-#define BUTTON_GPIO 0
+#define BUTTON_GPIO 14
+#define LED_RED_GPIO 12
+#define LED_BLUE_GPIO 13
+#define LED_GREEN_GPIO 15
 
 // Sensors Definitions
 #define DHT_TYPE DHT11
@@ -21,6 +24,15 @@
 
 // Sensors Instantiation
 DHT_Unified dht(DHT11_GPIO, DHT_TYPE);
+
+// Circuit User Id to monitor presence
+#define USER_ID "c6b8bea7-79b0-4263-9c06-00149ef2db35"
+
+// Colors 
+#define LED_OFF -1
+#define LED_RED 0
+#define LED_GREEN 1
+#define LED_BLUE 2
 
 // Intervals
 Ticker ledTicker;
@@ -42,6 +54,7 @@ boolean updateDht11 = false;
 boolean displayingText = false;
 boolean checkButton = false;
 int buttonState = 0;
+int currentRGBLEDColor = -1;
 
 // Builtin LED flashing
 void ledTick() {
@@ -132,6 +145,39 @@ void processDhtInfo () {
   }
 }
 
+// Set RGB Led Color
+int setLedColor(int color) {
+  if (color == LED_RED) {
+    digitalWrite(LED_GREEN_GPIO, HIGH);
+    digitalWrite(LED_RED_GPIO, LOW);
+    digitalWrite(LED_BLUE_GPIO, HIGH);
+  } else if (color == LED_GREEN) {
+    digitalWrite(LED_GREEN_GPIO, LOW);
+    digitalWrite(LED_RED_GPIO, HIGH);
+    digitalWrite(LED_BLUE_GPIO, HIGH);
+  } else if (color == LED_BLUE) {
+    digitalWrite(LED_GREEN_GPIO, HIGH);
+    digitalWrite(LED_RED_GPIO, HIGH);
+    digitalWrite(LED_BLUE_GPIO, LOW);
+  } else {
+    // Turn Off
+    digitalWrite(LED_GREEN_GPIO, HIGH);
+    digitalWrite(LED_RED_GPIO, HIGH);
+    digitalWrite(LED_BLUE_GPIO, HIGH);
+  }
+  return color;
+}
+
+// Show Presence
+void showPresence(const char *presence) {
+  if (strncmp(presence, PRESENCE_AVAILABLE, strlen(PRESENCE_AVAILABLE)) == 0) {
+    setLedColor(LED_GREEN);
+  } else if (strncmp(presence, PRESENCE_BUSY, strlen(PRESENCE_BUSY)) == 0) {
+    setLedColor(LED_RED);
+  } else {
+    setLedColor(LED_BLUE);
+  }
+}
 void setup() {
   Serial.begin(115200);
   // Initialize Liquid crystal display
@@ -161,14 +207,6 @@ void setup() {
   circuitClient->setConversationId(CIRCUIT_CONV_ID);
   circuitClient->setOnNewTextItemCallBack(onNewTextItemCB);
 
-  // Post message to Circuit conversation
-  circuitClient->postTextMessage("Hello World!");
-
-  // Show setup finished and app is ready
-  lcd.clear();
-  lcd.backlight();
-  lcd.print("Ready!");
-
   // Setup GPIO for buttong
   pinMode(BUTTON_GPIO, INPUT);
 
@@ -180,6 +218,27 @@ void setup() {
   Serial.print(F("Sensor Minimun Delay:")); Serial.print(dht11DelayMS); Serial.println(F(" MS"));
   dhtTicker.attach(dht11DelayMS / 1000, setUpdateDht11);
   buttonTicker.attach(0.2, changeCheckButton);
+
+  // Setup GPIOs for RGBLED
+  pinMode(LED_RED_GPIO, OUTPUT);
+  pinMode(LED_BLUE_GPIO, OUTPUT);
+  pinMode(LED_GREEN_GPIO, OUTPUT);
+
+  currentRGBLEDColor = setLedColor(LED_OFF);
+
+  // Post message to Circuit conversation
+  circuitClient->postTextMessage("Hello World!");
+
+  // Get User Presence
+  const char* userPresence = circuitClient->getUserPresence(USER_ID);
+  Serial.print("Initial User Presence: "); Serial.println(userPresence);
+  showPresence(userPresence);
+ 
+  // Show setup finished and app is ready
+  lcd.clear();
+  lcd.backlight();
+  lcd.print("Ready!");
+
 }
 
 void loop() {
