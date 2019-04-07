@@ -24,7 +24,27 @@
             "includePath": [
                 "/home/walter/.arduino15/packages/esp8266/tools/**",
                 "/home/walter/.arduino15/packages/esp8266/hardware/esp8266/2.5.0/**"
+            ]
+        },
+        {
+            "name": "Mac",
+            "includePath": [
+                "/Users/wmartins/Library/Arduino15/packages/esp8266/tools/**",
+                "/Users/wmartins/Library/Arduino15/packages/esp8266/hardware/esp8266/2.4.2/**",
+                "${workspaceFolder}/**",
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino",
+                "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/include",
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/variants/standard",
+                "/Users/wmartins/Documents/Arduino/libraries/WiFiManager"
             ],
+            "defines": [],
+            "macFrameworkPath": [
+                "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/System/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64",
             "forcedInclude": []
         }
     ],
