@@ -87,6 +87,10 @@ void onNewTextItemCB (String text) {
   textDisplayTicker.attach(5, stopDisplaying);
 }
 
+void onUserPresenceChangeCB(String userPresence) {
+  Serial.print("User presecene is now: "); Serial.println(userPresence);
+  showPresence(userPresence.c_str());
+}
 void setUpdateDht11() {
   updateDht11 = !updateDht11;
 }
@@ -206,6 +210,7 @@ void setup() {
   circuitClient = new CircuitClient(BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
   circuitClient->setConversationId(CIRCUIT_CONV_ID);
   circuitClient->setOnNewTextItemCallBack(onNewTextItemCB);
+  circuitClient->setOnUserPresenceChange(USER_ID, onUserPresenceChangeCB);
 
   // Setup GPIO for buttong
   pinMode(BUTTON_GPIO, INPUT);

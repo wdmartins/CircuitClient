@@ -57,12 +57,14 @@ class CircuitClient {
     void _getAllWebhooks(void);
     String _getBaseUrl(void);
     String _getConversationUrl(void);
+    String _getPresenceWebHooksUrl(void);
     void _getUserProfile(void);
     String _getUserPresenceUrl(char *);
     String _getUserProfileUrl(void);
     String _getWebHooksUrl(void);
     void _handleNewTextItem(void);
     void _handleNotFound(void);
+    void _handleUserPresenceChange(void);
     void _startServer(void);
 };
 

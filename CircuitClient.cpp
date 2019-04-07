@@ -79,8 +79,8 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
     _onNewTextItemCB = callback;
     if (!_server_started) {
         _startServer();
-        server.on("/newTextItem", std::bind(&CircuitClient::_handleNewTextItem, this));
     }
+    server.on("/newTextItem", std::bind(&CircuitClient::_handleNewTextItem, this));
     // Register webhook
     http.begin(_getWebHooksUrl(), CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(_credentials);
@@ -90,7 +90,6 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
     _debug("Webhook for new text item ended with code: ");
     _debug(httpCode);
     http.end();
-    _getAllWebhooks();
 }
 
 const char *CircuitClient::getUserPresence(char *userId) {
@@ -112,8 +111,22 @@ const char *CircuitClient::getUserPresence(char *userId) {
     return doc[0]["state"];
 }
 
-void CircuitClient::setOnUserPresenceChange(char* userId, void (*func)(String) ) {
-    //TODO
+void CircuitClient::setOnUserPresenceChange(char* userId, void (*callback)(String) ) {
+    _onUserPresenceChangeCB = callback;
+    if (!_server_started) {
+        _startServer();
+    }
+    server.on("/userpresencechange", std::bind(&CircuitClient::_handleUserPresenceChange, this));
+    // Register webhook
+    http.begin(_getPresenceWebHooksUrl(), CIRCUIT_DOMAIN_FINGERPRINT);
+    http.setAuthorization(_credentials);
+    String content = String("{\"url\":\"") + MY_WEBHOOKS_URL + ":" + WEBSERVER_PORT + "/userpresencechange\",\"userIds\":[\"" + userId + "\"]}";
+    _debug(content);
+    int httpCode = http.POST(content);
+    _debug("Webhook for user presence change ended with code: ");
+    _debug(httpCode);
+    http.end();
+    _getAllWebhooks();
 }
 
 void CircuitClient::run() {
@@ -200,12 +213,46 @@ void CircuitClient::_handleNewTextItem(void) {
     server.send(200);
 }
 
+void CircuitClient::_handleUserPresenceChange(void) {
+    _debug("Handling user presence change");
+    if (server.hasArg("plain")) {
+        _debug(server.arg("plain"));
+        StaticJsonDocument<2000> doc;
+        DeserializationError error = deserializeJson(doc, server.arg("plain"));
+        if (error) {
+            _debug("Error deserializing message body");
+            _debug(error.c_str());
+            server.send(500, "Error deserializing json");
+            return;
+        } else {
+            const char* state = doc["presenceState"]["state"];
+            _debug(state);
+            if (!state) {
+                server.send(400, "No state found in body");
+                return;
+            }
+            _debug(state);
+            if (_onUserPresenceChangeCB != NULL) {
+                _onUserPresenceChangeCB(state);
+            }
+        }
+    } else {
+        _debug("No body on HTTP request for new text message");
+        server.send(400, "No body on request");
+        return;
+    }
+    server.send(200);
+}
+
 String CircuitClient::_getBaseUrl() {
     return "https://" + _domain + REST_API_VERSION_URL;
 }
 
 String CircuitClient::_getWebHooksUrl() {
     return String(_getBaseUrl() + CIRCUIT_WEBHOOKS_URL);
+}
+String CircuitClient::_getPresenceWebHooksUrl() {
+    return String(_getBaseUrl() + CIRCUIT_WEBHOOKS_URL + USER_PRESENCE_WEBHOOK_URL);
 }
 
 String CircuitClient::_getConversationUrl() {
