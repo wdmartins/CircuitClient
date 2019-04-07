@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "/home/walter/Arduino/libraries/ArduinoJson",
+                    "/home/walter/Arduino/libraries/CircuitClient",
+                    "/opt/arduino-1.8.9/hardware/arduino/avr/cores/arduino",
+                    "/opt/arduino-1.8.9/hardware/esp8266com/esp8266/libraries/ESP8266HTTPClient",
+                    "/opt/arduino-1.8.9/hardware/esp8266com/esp8266/libraries/ESP8266WebServer",
+                    "/home/walter/Arduino/libraries/WiFiManager",
+                    "/opt/arduino-1.8.9/hardware/esp8266com/esp8266/libraries/Ticker",
+                    "/home/walter/Arduino/libraries/Adafruit_Unified_Sensor",
+                    "/home/walter/Arduino/libraries/DHT_sensor_library",
+                    "/home/walter/Arduino/libraries/Arduino-LiquidCrystal-I2C-library"
+                ]
+            },
+            "includePath": [
+                "/home/walter/.arduino15/packages/esp8266/tools/**",
+                "/home/walter/.arduino15/packages/esp8266/hardware/esp8266/2.5.0/**"
+            ],
+            "forcedInclude": []
+        }
+    ],
+    "version": 4
+}
