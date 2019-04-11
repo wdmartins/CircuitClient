@@ -40,8 +40,8 @@ Ticker dhtTicker;
 Ticker buttonTicker;
 Ticker textDisplayTicker;
 
-// Circuit Client declaration
-CircuitClient *circuitClient;
+// Circuit Client
+CircuitClient circuitClient(BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
 
 // Setup Liquid crystal display
 LiquidCrystal_I2C lcd(0x27, 16 ,2);
@@ -145,7 +145,7 @@ void processDhtInfo () {
     Serial.print("Reporting temperature: "); Serial.print(temp); Serial.print(" and humidity: "); Serial.println(currentHumidity);
     char tempText[17];
     displayTemp(tempText);
-    circuitClient->postTextMessage(tempText);
+    circuitClient.postTextMessage(tempText);
   }
 }
 
@@ -153,7 +153,8 @@ void processDhtInfo () {
 int setLedColor(int color) {
   if (color == LED_RED) {
     digitalWrite(LED_GREEN_GPIO, HIGH);
-    digitalWrite(LED_RED_GPIO, LOW);
+    digitalWrite(LED_RED_GPIO, LOW);using namespace std;
+
     digitalWrite(LED_BLUE_GPIO, HIGH);
   } else if (color == LED_GREEN) {
     digitalWrite(LED_GREEN_GPIO, LOW);
@@ -207,10 +208,10 @@ void setup() {
   digitalWrite(BUILTIN_LED, LOW);
 
   // Configure Circuit Client library
-  circuitClient = new CircuitClient(BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
-  circuitClient->setConversationId(CIRCUIT_CONV_ID);
-  circuitClient->setOnNewTextItemCallBack(onNewTextItemCB);
-  circuitClient->setOnUserPresenceChange(USER_ID, onUserPresenceChangeCB);
+  // circuitClient = new CircuitClient(BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
+  circuitClient.setConversationId(CIRCUIT_CONV_ID);
+  circuitClient.setOnNewTextItemCallBack(onNewTextItemCB);
+  circuitClient.setOnUserPresenceChange(USER_ID, onUserPresenceChangeCB);
 
   // Setup GPIO for buttong
   pinMode(BUTTON_GPIO, INPUT);
@@ -232,10 +233,10 @@ void setup() {
   currentRGBLEDColor = setLedColor(LED_OFF);
 
   // Post message to Circuit conversation
-  circuitClient->postTextMessage("Hello World!");
+  circuitClient.postTextMessage("Hello World!");
 
   // Get User Presence
-  const char* userPresence = circuitClient->getUserPresence(USER_ID);
+  const char* userPresence = circuitClient.getUserPresence(USER_ID);
   Serial.print("Initial User Presence: "); Serial.println(userPresence);
   showPresence(userPresence);
  
@@ -248,7 +249,7 @@ void setup() {
 
 void loop() {
   // Allow Circuit client to run
-  circuitClient->run();
+  circuitClient.run();
 
   // Check temperature
   if (updateDht11 && !displayingText) {
@@ -265,7 +266,7 @@ void loop() {
         //Report temperature
         char temp[100];
         sprintf(temp, "On Demand Report: Temperature %d, Humidity %d", static_cast<int>(currentTemperature), static_cast<int>(currentHumidity));
-        circuitClient->postTextMessage(temp);
+        circuitClient.postTextMessage(temp);
       }
     }
   }
