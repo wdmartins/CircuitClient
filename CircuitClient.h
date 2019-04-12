@@ -10,6 +10,8 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
 
+using namespace std;
+
 // Circuit Domains Definitions
 #define SANDBOX_URL "circuitsandbox.net"
 #define SANDBOX_FINGERPRINT "E2:D8:96:33:4F:F7:A3:66:AF:EF:A2:04:11:9C:39:D8:D6:DD:DA:95"
@@ -35,11 +37,12 @@ typedef void (*fptr)(String);
 
 class CircuitClient {
   public:
-    CircuitClient(String domain, char* credentials, String convId);
-    CircuitClient(char *credentials, String convId);
+    CircuitClient(string domain, string credentials, string convId);
+    CircuitClient(string credentials, string convId);
     
-    void setConversationId(String convId);
-    int postTextMessage(String text);
+    void init(void);
+    void setConversationId(string convId);
+    int postTextMessage(string text);
     void setOnNewTextItemCallBack( void (*func)(String) );
     const char *getUserPresence(char* userId);
     void setOnUserPresenceChange(char* userId, void (*func)(String) );
@@ -48,23 +51,24 @@ class CircuitClient {
   protected:
     void (*_onNewTextItemCB)(String);
     void (*_onUserPresenceChangeCB)(String);
-    String _domain;
-    char * _credentials;
+    string _domain;
+    string _credentials;
     char _userId[UUID_LENGHT];
-    String _convId;
+    string _convId;
     bool _server_started;
     void _deleteAllWebHooks(void);
     void _getAllWebhooks(void);
-    String _getBaseUrl(void);
-    String _getConversationUrl(void);
-    String _getPresenceWebHooksUrl(void);
+    string _getBaseUrl(void);
+    string _getConversationUrl(void);
+    string _getPresenceWebHooksUrl(void);
     void _getUserProfile(void);
-    String _getUserPresenceUrl(char *);
-    String _getUserProfileUrl(void);
-    String _getWebHooksUrl(void);
+    string _getUserPresenceUrl(char *);
+    string _getUserProfileUrl(void);
+    string _getWebHooksUrl(void);
     void _handleNewTextItem(void);
     void _handleNotFound(void);
     void _handleUserPresenceChange(void);
+    void _init(string domain, string credentials, string convId);
     void _startServer(void);
 };
 

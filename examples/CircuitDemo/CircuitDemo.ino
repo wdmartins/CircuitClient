@@ -207,9 +207,8 @@ void setup() {
   ledTicker.detach();
   digitalWrite(BUILTIN_LED, LOW);
 
-  // Configure Circuit Client library
-  // circuitClient = new CircuitClient(BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
-  circuitClient.setConversationId(CIRCUIT_CONV_ID);
+  // Initialize Circuit Client
+  circuitClient.init();
   circuitClient.setOnNewTextItemCallBack(onNewTextItemCB);
   circuitClient.setOnUserPresenceChange(USER_ID, onUserPresenceChangeCB);
 

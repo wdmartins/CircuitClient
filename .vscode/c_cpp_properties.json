@@ -28,13 +28,18 @@
         },
         {
             "name": "Mac",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino",
+                    "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/include",
+                    "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/variants/standard"
+                ]
+            },
             "includePath": [
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino",
                 "/Users/wmartins/Library/Arduino15/packages/esp8266/tools/**",
                 "/Users/wmartins/Library/Arduino15/packages/esp8266/hardware/esp8266/2.4.2/**",
-                "${workspaceFolder}/**",
-                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino",
-                "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/include",
-                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/variants/standard",
                 "/Users/wmartins/Documents/Arduino/libraries/WiFiManager"
             ],
             "defines": [],

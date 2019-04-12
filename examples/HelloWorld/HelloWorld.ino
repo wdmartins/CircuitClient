@@ -10,7 +10,7 @@
 Ticker ledTicker;
 
 // Circuit Client declaration
-CircuitClient *circuitClient;
+CircuitClient circuitClient(CIRCUIT_DOMAIN, BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
 
 void ledTick() {
   int state = digitalRead(BUILTIN_LED);
@@ -44,16 +44,15 @@ void setup() {
   ledTicker.detach();
   digitalWrite(BUILTIN_LED, LOW);
 
-  // Configure Circuit Client library
-  circuitClient = new CircuitClient(CIRCUIT_DOMAIN, BASE64_CREDENTIALS);
-  circuitClient->setConversationId(CIRCUIT_CONV_ID);
+  // Initialize Circuit Client
+  circuitClient.init();
 
   // Post message to Circuit conversation
-  circuitClient->postTextMessage("Hello World!");
+  circuitClient.postTextMessage("Hello World!");
 
 }
 
 void loop() {
   // Allow Circuit client to run
-  circuitClient->run();
+  circuitClient.run();
 }
