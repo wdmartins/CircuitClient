@@ -65,6 +65,32 @@ namespace circuit {
       string _getConversationUrl(string convId);
   };
 
+  class HttpWrapper {
+    public:
+      HttpWrapper(bool debug = false);
+      HttpWrapper(string b64EncodedCredentials, bool debug = false);
+      HttpWrapper(string username, string password, bool debug = false);
+
+      void setCredentials(string b64EncodedCredentials);
+      void setCredentials(string username, string password);
+      void setServerFingerprint(string fingerPrint);
+      void setHttpClient(HTTPClient *http);
+      void setDebug(void);
+      void resetDebug(void);
+      string getPayload();
+      int POST(string url, string content);
+      int GET(string url);
+      int DELETE(string url);
+      int PUT(string url, string content);
+
+    protected:
+      HTTPClient *_http;
+      string _credentials;
+      string _serverFingerprint;
+      bool _debugEnabled;
+      string _lastPayload;
+
+  };
   /*------------------------------------------------------------------------------------------*/
   /* Circuit Client                                                                           */
   /*------------------------------------------------------------------------------------------*/
@@ -82,6 +108,7 @@ namespace circuit {
       void run();
 
     protected:
+      HttpWrapper *_http;
       void (*_onNewTextItemCB)(string);
       void (*_onUserPresenceChangeCB)(string);
       UrlBuilder *_urlBuilder;
@@ -92,13 +119,7 @@ namespace circuit {
       bool _server_started;
       void _deleteAllWebHooks(void);
       void _getAllWebhooks(void);
-      string _getBaseUrl(void);
-      string _getConversationUrl(void);
-      string _getPresenceWebHooksUrl(void);
       void _getUserProfile(void);
-      string _getUserPresenceUrl(char *);
-      string _getUserProfileUrl(void);
-      string _getWebHooksUrl(void);
       void _handleNewTextItem(void);
       void _handleNotFound(void);
       void _handleUserPresenceChange(void);

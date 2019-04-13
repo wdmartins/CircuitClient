@@ -50,6 +50,10 @@ CircuitClient::CircuitClient(string domain, string credentials, string convId)
 
 void CircuitClient::init() {
     _urlBuilder = new UrlBuilder(_domain);
+    _http = new HttpWrapper(BASE64_CREDENTIALS, true);
+    //TODO: Add server fingerprint to CircuitClient constructor
+    _http->setServerFingerprint(kSandBoxFingerprint);
+    _http->setHttpClient(&http);
     strcpy(_userId,"\0");
     _deleteAllWebHooks();
     _debug("HTTP server configured on port:");
@@ -61,22 +65,13 @@ void CircuitClient::setConversationId(string convId) {
 }
 
 int CircuitClient::postTextMessage(string textMessage) {
-    if (strlen(_convId.c_str()) == 0) {
+    if (_convId.length() == 0) {
         _debug("Cannot post message without conversation id");
         return -1;
     }
     _debug("Posting text message to circuit conversation...");
-    string url = _urlBuilder->getMessagesUrl(_convId);
-    string content = "{\"content\":\"";
-    content += textMessage;
-    content += "\"}";
-    _debug(url);
-    _debug(content);
-    http.begin(url.c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
-    http.setAuthorization(_credentials.c_str());
-    int httpCode = http.POST(content.c_str());
-    _debug(httpCode);
-    http.end();
+    string content = "{\"content\":\"" + textMessage + "\"}";
+    int httpCode = _http->POST(_urlBuilder->getMessagesUrl(_convId), content);
     return httpCode;
 }
 
@@ -87,29 +82,17 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(string)) {
     }
     server.on("/newTextItem", std::bind(&CircuitClient::_handleNewTextItem, this));
     // Register webhook
-    http.begin(_urlBuilder->getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
-    http.setAuthorization(_credentials.c_str());
     string content = "{\"url\":\"";
     content += MY_WEBHOOKS_URL;
     content += ":";
     content += WEBSERVER_PORT;
     content += "/newTextItem\",\"filter\":[\"CONVERSATION.ADD_ITEM\"]}";
-    _debug(content.c_str());
-    int httpCode = http.POST(content.c_str());
-    _debug("Webhook for new text item ended with code: ");
-    _debug(httpCode);
-    http.end();
+    _http->POST(_urlBuilder->getWebHooksUrl(), content);
 }
 
 const char *CircuitClient::getUserPresence(char *userId) {
-    http.begin(_urlBuilder->getUserPresenceUrl(userId).c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
-    http.setAuthorization(_credentials.c_str());
-    int httpCode = http.GET();
-    _debug("Getting User Presence ended with code: ");
-    _debug(httpCode);
-    string payload = http.getString().c_str();
-    _debug(payload);
-    http.end();
+    _http->GET(_urlBuilder->getUserPresenceUrl(userId));
+    string payload = _http->getPayload();
     StaticJsonDocument<1000> doc;
     DeserializationError error = deserializeJson(doc, payload);
     if (error) {
@@ -127,17 +110,10 @@ void CircuitClient::setOnUserPresenceChange(char* userId, void (*callback)(strin
     }
     server.on("/userpresencechange", std::bind(&CircuitClient::_handleUserPresenceChange, this));
     // Register webhook
-    http.begin(_urlBuilder->getPresenceWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
-    http.setAuthorization(_credentials.c_str());
     string content = "{\"url\":\"";
     content += MY_WEBHOOKS_URL; content += ":"; content += WEBSERVER_PORT;
     content += "/userpresencechange\",\"userIds\":[\""; content += userId; content += "\"]}";
-    _debug(content);
-    int httpCode = http.POST(content.c_str());
-    _debug("Webhook for user presence change ended with code: ");
-    _debug(httpCode);
-    http.end();
-    _getAllWebhooks();
+    _http->POST(_urlBuilder->getPresenceWebHooksUrl(), content);
 }
 
 void CircuitClient::run() {
@@ -145,14 +121,9 @@ void CircuitClient::run() {
 }
 
 void CircuitClient::_getUserProfile() {
-    http.begin(_urlBuilder->getUserProfileUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
-    http.setAuthorization(_credentials.c_str());
-    int httpCode = http.GET();
-    _debug("Getting User Profile ended with code: ");
-    _debug(httpCode);
+    int httpCode = _http->GET(_urlBuilder->getUserProfileUrl());
     if (httpCode == 200) {
-        string payload = http.getString().c_str();
-        _debug(payload);
+        string payload = _http->getPayload();
         StaticJsonDocument<1000> doc;
         DeserializationError error = deserializeJson(doc, payload);
         if (error) {
@@ -169,17 +140,11 @@ void CircuitClient::_getUserProfile() {
             _debug(_userId);
         }
     }
-    http.end();
 }
 
 void CircuitClient::_deleteAllWebHooks() {
     _debug("Delete all circuit webhooks");
-    http.begin(_urlBuilder->getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
-    http.setAuthorization(_credentials.c_str());
-    int httpCode = http.sendRequest("DELETE");
-    _debug("Deleting all webhooks ended with code: ");
-    _debug(httpCode);
-    http.end();
+    _http->DELETE(_urlBuilder->getWebHooksUrl());
 }
 
 void CircuitClient::_handleNotFound() {
@@ -271,17 +236,117 @@ void CircuitClient::_startServer() {
 }
 
 void CircuitClient::_getAllWebhooks() {
+    // Method not exposed. For debugging purposes only 
     _debug("Get all circuit webhooks");
-    http.begin(_urlBuilder->getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
-    http.setAuthorization(_credentials.c_str());
-    int httpCode = http.GET();
-    _debug("Get all webhooks ended with code: ");
-    _debug(httpCode);
-    String payload = http.getString();
-    _debug(payload.c_str());
-    http.end();
+    _http->GET(_urlBuilder->getWebHooksUrl());
 }
 
+/*------------------------------------------------------------------------------------------*/
+/* HTTP Wrapper                                                                             */
+/*------------------------------------------------------------------------------------------*/
+HttpWrapper::HttpWrapper(bool debug)
+    :_debugEnabled(debug) {}
+
+HttpWrapper::HttpWrapper(string b64EncodedCredentials, bool debug)
+    :_credentials(b64EncodedCredentials),
+    _debugEnabled(debug) {}
+
+HttpWrapper::HttpWrapper(string username, string password, bool debug) {
+    _debugEnabled = debug;
+    //TODO: Encode credentials
+    // _credentials = ....
+}
+
+void HttpWrapper::setHttpClient(HTTPClient *http) {
+    _http = http;
+}
+
+void HttpWrapper::setCredentials(string b64EncodedCredentials) {
+    _credentials = b64EncodedCredentials;
+}
+
+void HttpWrapper::setCredentials(string username, string password) {
+    //TODO: Encode credentials
+    // _credentials = ....
+}
+
+void HttpWrapper::setServerFingerprint(string fingerprint) {
+    _serverFingerprint = fingerprint;
+}
+
+void HttpWrapper::setDebug() {
+    _debugEnabled = true;
+}
+
+void HttpWrapper::resetDebug() {
+    _debugEnabled = false;
+}
+
+int HttpWrapper::PUT(string url, string content) {
+    //TODO
+    return 501;
+}
+
+int HttpWrapper::POST(string url, string content) {
+    string debugText;
+    if (_debugEnabled) {
+        debugText = "POST: url [" + url + "] content [" + content + "]";
+        _debug(debugText);
+    }
+    _http->begin(url.c_str(), _serverFingerprint.c_str());
+    _http->setAuthorization(_credentials.c_str());
+    int httpCode = _http->POST(content.c_str());
+    if (_debugEnabled) {
+        debugText = "Result: HTTP ";
+        _debug(debugText);
+        _debug(httpCode);
+    }
+    _http->end();
+    return httpCode;
+}
+
+int HttpWrapper::GET(string url) {
+    string debugText;
+    if (_debugEnabled) {
+        debugText = "GET: url [" + url + "]";
+        _debug(debugText);
+    }
+    _http->begin(url.c_str(), _serverFingerprint.c_str());
+    _http->setAuthorization(_credentials.c_str());
+    int httpCode = _http->GET();
+    _lastPayload = _http->getString().c_str();
+    if (_debugEnabled) {
+        debugText = "Result: HTTP ";
+        _debug(debugText);
+        _debug(httpCode);
+        debugText = "Payload: [" + _lastPayload + "]"; 
+        _debug(debugText);
+    }
+    _http->end();
+    return httpCode;
+}
+
+string HttpWrapper::getPayload() {
+    return _lastPayload;
+}
+
+int HttpWrapper::DELETE(string url) {
+    string debugText;
+    if (_debugEnabled) {
+        debugText = "DELETE: url [" + url + "]";
+        _debug(debugText);
+    }
+    http.begin(url.c_str(), _serverFingerprint.c_str());
+    http.setAuthorization(_credentials.c_str());
+    int httpCode = http.sendRequest("DELETE");
+    if (_debugEnabled) {
+        debugText = "Result: HTTP ";
+        _debug(debugText);
+        _debug(httpCode);
+    }
+    http.end();
+    return httpCode;
+}
 /*------------------------------------------------------------------------------------------*/
 /* UrlBuilder                                                                               */
 /*------------------------------------------------------------------------------------------*/
