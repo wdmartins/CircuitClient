@@ -5,6 +5,8 @@
 #include "CircuitClient.h"
 #include "ArduinoJson.h"
 
+using namespace circuit;
+
 HTTPClient http;
 ESP8266WebServer server(atoi(WEBSERVER_PORT));
 /**
@@ -21,12 +23,6 @@ void _debug(string text) {
         DEBUG_OUTPUT.print("CIRCUIT:"); DEBUG_OUTPUT.println(text.c_str());
     #endif
 }
-
-// void _debug(String text) {
-//     #ifdef DEBUG_CIRCUIT_CLIENT
-//         DEBUG_OUTPUT.print("CIRCUIT:"); DEBUG_OUTPUT.println(text);
-//     #endif
-// }
 
 void _debug(int text) {
     #ifdef DEBUG_CIRCUIT_CLIENT
@@ -69,7 +65,7 @@ int CircuitClient::postTextMessage(string textMessage) {
         return -1;
     }
     _debug("Posting text message to circuit conversation...");
-    string url = _getConversationUrl() += MESSAGES_ENDPOINT_URL;
+    string url = _getConversationUrl() += kMessagesEndpointUrl;
     string content = "{\"content\":\"";
     content += textMessage;
     content += "\"}";
@@ -83,7 +79,7 @@ int CircuitClient::postTextMessage(string textMessage) {
     return httpCode;
 }
 
-void CircuitClient::setOnNewTextItemCallBack(void(*callback)(String)) {
+void CircuitClient::setOnNewTextItemCallBack(void(*callback)(string)) {
     _onNewTextItemCB = callback;
     if (!_server_started) {
         _startServer();
@@ -123,7 +119,7 @@ const char *CircuitClient::getUserPresence(char *userId) {
     return doc[0]["state"];
 }
 
-void CircuitClient::setOnUserPresenceChange(char* userId, void (*callback)(String) ) {
+void CircuitClient::setOnUserPresenceChange(char* userId, void (*callback)(string) ) {
     _onUserPresenceChangeCB = callback;
     if (!_server_started) {
         _startServer();
@@ -162,7 +158,7 @@ void CircuitClient::_getUserProfile() {
         _debug(error.c_str());
         return;
     } else {
-        strncpy(_userId, doc["userId"], UUID_LENGHT-1);
+        strncpy(_userId, doc["userId"], kUUIDLength-1);
         if (!_userId) {
             _debug("UserId not found in profile");
             return;
@@ -267,34 +263,34 @@ void CircuitClient::_handleUserPresenceChange(void) {
 string CircuitClient::_getBaseUrl() {
     string url("https://");
     url += _domain;
-    url += REST_API_VERSION_URL;
+    url += kRestApiVersionUrl;
     return url;
 }
 
 string CircuitClient::_getWebHooksUrl() {
     string url(_getBaseUrl());
-    return url += CIRCUIT_WEBHOOKS_URL;
+    return url += kCircuitWebHooksUrl;
 }
 string CircuitClient::_getPresenceWebHooksUrl() {
     string url(_getBaseUrl());
-    url += CIRCUIT_WEBHOOKS_URL;
-    return url += USER_PRESENCE_WEBHOOK_URL;
+    url += kCircuitWebHooksUrl;
+    return url += kUserPresenceWebhookUrl;
 }
 
 string CircuitClient::_getConversationUrl() {
     string url(_getBaseUrl());
-    url += CONV_ENDPOINT_URL;
+    url += kConvEndpointUrl;
     return url += _convId;
 }
 
 string CircuitClient::_getUserProfileUrl() {
     string url(_getBaseUrl());
-    return url += USER_PROFILE_ENDPOINT_URL;
+    return url += kUserProfileEndpointUrl;
 }
 
 string CircuitClient::_getUserPresenceUrl(char *userId) {
     string url(_getBaseUrl());
-    url += USER_PRESENCE_ENDPOINT_URL;
+    url += kUserPresenceEndpointUrl;
     url += "?userIds=";
     return url += userId;
 }

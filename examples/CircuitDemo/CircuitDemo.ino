@@ -6,6 +6,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <CircuitClient.h>
 
+using namespace circuit;
 // Access point to configure Wi-Fi
 #define ACCESS_POINT_NAME "ESP8266"
 #define ACCESS_POINT_PASS "esp8266"
@@ -79,17 +80,17 @@ void stopDisplaying() {
 }
 
 // Circuit new text item callback
-void onNewTextItemCB (String text) {
-  Serial.print("Text Received: "); Serial.println(text);
+void onNewTextItemCB (string text) {
+  Serial.print("Text Received: "); Serial.println(text.c_str());
   displayingText = true;
   lcd.clear();
   lcd.print(text.c_str());
   textDisplayTicker.attach(5, stopDisplaying);
 }
 
-void onUserPresenceChangeCB(String userPresence) {
-  Serial.print("User presecene is now: "); Serial.println(userPresence);
-  showPresence(userPresence.c_str());
+void onUserPresenceChangeCB(string userPresence) {
+  Serial.print("User presecene is now: "); Serial.println(userPresence.c_str());
+  showPresence(userPresence);
 }
 void setUpdateDht11() {
   updateDht11 = !updateDht11;
@@ -174,10 +175,10 @@ int setLedColor(int color) {
 }
 
 // Show Presence
-void showPresence(const char *presence) {
-  if (strncmp(presence, PRESENCE_AVAILABLE, strlen(PRESENCE_AVAILABLE)) == 0) {
+void showPresence(string presence) {
+  if (kPresenceAvailable.compare(presence) == 0) {
     setLedColor(LED_GREEN);
-  } else if (strncmp(presence, PRESENCE_BUSY, strlen(PRESENCE_BUSY)) == 0) {
+  } else if (kPresenceBusy.compare(presence) == 0) {
     setLedColor(LED_RED);
   } else {
     setLedColor(LED_BLUE);
