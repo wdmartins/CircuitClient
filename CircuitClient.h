@@ -42,6 +42,28 @@ namespace circuit {
   const string kPresenceAway = "AWAY";
   const string kPresenceDnd = "DND";
 
+  class UrlBuilder {
+    public:
+      UrlBuilder(string domain, string protocol = "https", string restApiVersion = kRestApiVersionUrl);
+
+      // https:://circuitsandbox.net/rest/v2/webhooks
+      string getWebHooksUrl(void);
+      // https:://circuitsandbox.net/rest/v2/webhooks/presence
+      string getPresenceWebHooksUrl(void);
+      // https:://circuitsandbox.net/rest/v2/conversations/{convId}/messages
+      string getMessagesUrl(string convId);
+      // https:://circuitsandbox.net/rest/v2/users/profile
+      string getUserProfileUrl();
+      // https:://circuitsandbox.net/rest/v2/users/presence
+      string getUserPresenceUrl(string userId);
+
+    protected:
+      string _baseUrl;
+
+    protected:
+      // https:://circuitsandbox.net/rest/v2/conversations/{convId}
+      string _getConversationUrl(string convId);
+  };
 
   /*------------------------------------------------------------------------------------------*/
   /* Circuit Client                                                                           */
@@ -62,6 +84,7 @@ namespace circuit {
     protected:
       void (*_onNewTextItemCB)(string);
       void (*_onUserPresenceChangeCB)(string);
+      UrlBuilder *_urlBuilder;
       string _domain;
       string _credentials;
       char _userId[kUUIDLength];

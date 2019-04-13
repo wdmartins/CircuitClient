@@ -49,6 +49,7 @@ CircuitClient::CircuitClient(string domain, string credentials, string convId)
 , _server_started(false) {}
 
 void CircuitClient::init() {
+    _urlBuilder = new UrlBuilder(_domain);
     strcpy(_userId,"\0");
     _deleteAllWebHooks();
     _debug("HTTP server configured on port:");
@@ -65,7 +66,7 @@ int CircuitClient::postTextMessage(string textMessage) {
         return -1;
     }
     _debug("Posting text message to circuit conversation...");
-    string url = _getConversationUrl() += kMessagesEndpointUrl;
+    string url = _urlBuilder->getMessagesUrl(_convId);
     string content = "{\"content\":\"";
     content += textMessage;
     content += "\"}";
@@ -86,7 +87,7 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(string)) {
     }
     server.on("/newTextItem", std::bind(&CircuitClient::_handleNewTextItem, this));
     // Register webhook
-    http.begin(_getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
+    http.begin(_urlBuilder->getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(_credentials.c_str());
     string content = "{\"url\":\"";
     content += MY_WEBHOOKS_URL;
@@ -101,7 +102,7 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(string)) {
 }
 
 const char *CircuitClient::getUserPresence(char *userId) {
-    http.begin(_getUserPresenceUrl(userId).c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
+    http.begin(_urlBuilder->getUserPresenceUrl(userId).c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(_credentials.c_str());
     int httpCode = http.GET();
     _debug("Getting User Presence ended with code: ");
@@ -126,7 +127,7 @@ void CircuitClient::setOnUserPresenceChange(char* userId, void (*callback)(strin
     }
     server.on("/userpresencechange", std::bind(&CircuitClient::_handleUserPresenceChange, this));
     // Register webhook
-    http.begin(_getPresenceWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
+    http.begin(_urlBuilder->getPresenceWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(_credentials.c_str());
     string content = "{\"url\":\"";
     content += MY_WEBHOOKS_URL; content += ":"; content += WEBSERVER_PORT;
@@ -144,34 +145,36 @@ void CircuitClient::run() {
 }
 
 void CircuitClient::_getUserProfile() {
-    http.begin(_getUserProfileUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
+    http.begin(_urlBuilder->getUserProfileUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(_credentials.c_str());
     int httpCode = http.GET();
     _debug("Getting User Profile ended with code: ");
     _debug(httpCode);
-    string payload = http.getString().c_str();
-    _debug(payload);
-    StaticJsonDocument<1000> doc;
-    DeserializationError error = deserializeJson(doc, payload);
-    if (error) {
-        _debug("Error deserializing message body");
-        _debug(error.c_str());
-        return;
-    } else {
-        strncpy(_userId, doc["userId"], kUUIDLength-1);
-        if (!_userId) {
-            _debug("UserId not found in profile");
+    if (httpCode == 200) {
+        string payload = http.getString().c_str();
+        _debug(payload);
+        StaticJsonDocument<1000> doc;
+        DeserializationError error = deserializeJson(doc, payload);
+        if (error) {
+            _debug("Error deserializing message body");
+            _debug(error.c_str());
             return;
+        } else {
+            strncpy(_userId, doc["userId"], kUUIDLength-1);
+            if (!_userId) {
+                _debug("UserId not found in profile");
+                return;
+            }
+            _debug("User Id: ");
+            _debug(_userId);
         }
-        _debug("User Id: ");
-        _debug(_userId);
     }
     http.end();
 }
 
 void CircuitClient::_deleteAllWebHooks() {
     _debug("Delete all circuit webhooks");
-    http.begin(_getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
+    http.begin(_urlBuilder->getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(_credentials.c_str());
     int httpCode = http.sendRequest("DELETE");
     _debug("Deleting all webhooks ended with code: ");
@@ -260,41 +263,6 @@ void CircuitClient::_handleUserPresenceChange(void) {
     server.send(200);
 }
 
-string CircuitClient::_getBaseUrl() {
-    string url("https://");
-    url += _domain;
-    url += kRestApiVersionUrl;
-    return url;
-}
-
-string CircuitClient::_getWebHooksUrl() {
-    string url(_getBaseUrl());
-    return url += kCircuitWebHooksUrl;
-}
-string CircuitClient::_getPresenceWebHooksUrl() {
-    string url(_getBaseUrl());
-    url += kCircuitWebHooksUrl;
-    return url += kUserPresenceWebhookUrl;
-}
-
-string CircuitClient::_getConversationUrl() {
-    string url(_getBaseUrl());
-    url += kConvEndpointUrl;
-    return url += _convId;
-}
-
-string CircuitClient::_getUserProfileUrl() {
-    string url(_getBaseUrl());
-    return url += kUserProfileEndpointUrl;
-}
-
-string CircuitClient::_getUserPresenceUrl(char *userId) {
-    string url(_getBaseUrl());
-    url += kUserPresenceEndpointUrl;
-    url += "?userIds=";
-    return url += userId;
-}
-
 void CircuitClient::_startServer() {
     server.begin();
     server.onNotFound(std::bind(&CircuitClient::_handleNotFound, this));
@@ -304,7 +272,7 @@ void CircuitClient::_startServer() {
 
 void CircuitClient::_getAllWebhooks() {
     _debug("Get all circuit webhooks");
-    http.begin(_getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
+    http.begin(_urlBuilder->getWebHooksUrl().c_str(), CIRCUIT_DOMAIN_FINGERPRINT);
     http.setAuthorization(_credentials.c_str());
     int httpCode = http.GET();
     _debug("Get all webhooks ended with code: ");
@@ -312,4 +280,35 @@ void CircuitClient::_getAllWebhooks() {
     String payload = http.getString();
     _debug(payload.c_str());
     http.end();
+}
+
+/*------------------------------------------------------------------------------------------*/
+/* UrlBuilder                                                                               */
+/*------------------------------------------------------------------------------------------*/
+UrlBuilder::UrlBuilder(string domain, string protocol, string restApiVersion) {
+    _baseUrl = protocol + "://" + domain + restApiVersion;
+}
+
+string UrlBuilder::getWebHooksUrl() {
+    return _baseUrl + kCircuitWebHooksUrl;
+}
+
+string UrlBuilder::getPresenceWebHooksUrl() {
+    return _baseUrl + kCircuitWebHooksUrl + kUserPresenceWebhookUrl;
+}
+
+string UrlBuilder::getUserProfileUrl() {
+    return _baseUrl + kUserProfileEndpointUrl;
+}
+
+string UrlBuilder::getUserPresenceUrl(string userId) {
+    return _baseUrl + kUserPresenceEndpointUrl + "?userIds=" + userId;
+}
+
+string UrlBuilder::getMessagesUrl(string convId) {
+    return _getConversationUrl(convId) + kMessagesEndpointUrl;
+}
+
+string UrlBuilder::_getConversationUrl(string convId) {
+    return _baseUrl + kConvEndpointUrl + convId;
 }
