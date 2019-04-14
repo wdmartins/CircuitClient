@@ -11,6 +11,17 @@ using namespace circuit;
 #define ACCESS_POINT_NAME "ESP8266"
 #define ACCESS_POINT_PASS "esp8266"
 
+// Circuit Client Configuration.
+#ifndef CIRCUIT_CONV_ID
+#define CIRCUIT_CONV_ID "Add Circuit Conversation Id here"
+#endif
+#ifndef BASE64_CREDENTIALS
+#define BASE64_CREDENTIALS "Add your b64 encoded circuit credentials"
+#endif
+// Circuit User Id to monitor presence
+#define USER_ID "c6b8bea7-79b0-4263-9c06-00149ef2db35"
+
+
 // GPIO Definitios
 #define DHT11_GPIO 2
 #define BUTTON_GPIO 14
@@ -26,9 +37,6 @@ using namespace circuit;
 // Sensors Instantiation
 DHT_Unified dht(DHT11_GPIO, DHT_TYPE);
 
-// Circuit User Id to monitor presence
-#define USER_ID "c6b8bea7-79b0-4263-9c06-00149ef2db35"
-
 // Colors 
 #define LED_OFF -1
 #define LED_RED 0
@@ -42,7 +50,7 @@ Ticker buttonTicker;
 Ticker textDisplayTicker;
 
 // Circuit Client
-CircuitClient circuitClient(BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
+CircuitClient circuitClient(BASE64_CREDENTIALS);
 
 // Setup Liquid crystal display
 LiquidCrystal_I2C lcd(0x27, 16 ,2);
@@ -233,6 +241,7 @@ void setup() {
   currentRGBLEDColor = setLedColor(LED_OFF);
 
   // Post message to Circuit conversation
+  circuitClient.setConversationId(CIRCUIT_CONV_ID);
   circuitClient.postTextMessage("Hello World!");
 
   // Get User Presence

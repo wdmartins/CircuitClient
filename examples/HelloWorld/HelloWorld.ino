@@ -6,11 +6,19 @@
 #define ACCESS_POINT_NAME "ESP8266"
 #define ACCESS_POINT_PASS "esp8266"
 
+// Circuit Client Configuration.
+#ifndef CIRCUIT_CONV_ID
+#define CIRCUIT_CONV_ID "Add Circuit Conversation Id here"
+#endif
+#ifndef BASE64_CREDENTIALS
+#define BASE64_CREDENTIALS "Add your b64 encoded circuit credentials"
+#endif
+
 // Intervals
 Ticker ledTicker;
 
 // Circuit Client declaration
-circuit::CircuitClient circuitClient(CIRCUIT_DOMAIN, BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
+circuit::CircuitClient circuitClient(BASE64_CREDENTIALS);
 
 void ledTick() {
   int state = digitalRead(BUILTIN_LED);
@@ -48,6 +56,7 @@ void setup() {
   circuitClient.init();
 
   // Post message to Circuit conversation
+  circuitClient.setConversationId(CIRCUIT_CONV_ID);
   circuitClient.postTextMessage("Hello World!");
 
 }

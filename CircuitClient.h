@@ -96,15 +96,15 @@ namespace circuit {
   /*------------------------------------------------------------------------------------------*/
   class CircuitClient {
     public:
-      CircuitClient(string domain, string credentials, string convId);
-      CircuitClient(string credentials, string convId);
-      
+      CircuitClient(string b64credentials, string domain = kSandBoxUrl, string serverFingerprint = kSandBoxFingerprint);
+
       void init(void);
       void setConversationId(string convId);
       int postTextMessage(string text);
+      int postTextMessage(string text, string convId);
       void setOnNewTextItemCallBack( void (*func)(string) );
-      const char *getUserPresence(char* userId);
-      void setOnUserPresenceChange(char* userId, void (*func)(string) );
+      const char *getUserPresence(string userId);
+      void setOnUserPresenceChange(string userId, void (*func)(string) );
       void run();
 
     protected:
@@ -114,8 +114,9 @@ namespace circuit {
       UrlBuilder *_urlBuilder;
       string _domain;
       string _credentials;
-      char _userId[kUUIDLength];
+      string _userId;
       string _convId;
+      string _serverFingerprint;
       bool _server_started;
       void _deleteAllWebHooks(void);
       void _getAllWebhooks(void);

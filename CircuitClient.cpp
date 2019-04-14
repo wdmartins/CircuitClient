@@ -30,31 +30,20 @@ void _debug(int text) {
     #endif
 }
 
-#ifndef CIRCUIT_DOMAIN
-#define CIRCUIT_DOMAIN SANDBOX_URL
-#define CIRCUIT_DOMAIN_FINGERPRINT SANDBOX_FINGERPRINT
-#endif
-
-
 /**
  * Circuit Client
  **/
-CircuitClient::CircuitClient(string credentials, string convId)
-: CircuitClient(CIRCUIT_DOMAIN, credentials, convId) {};
-
-CircuitClient::CircuitClient(string domain, string credentials, string convId) 
+CircuitClient::CircuitClient(string credentials, string domain, string fingerprint) 
 : _domain(domain)
 , _credentials(credentials)
-, _convId(convId)
+, _serverFingerprint(fingerprint)
 , _server_started(false) {}
 
 void CircuitClient::init() {
     _urlBuilder = new UrlBuilder(_domain);
-    _http = new HttpWrapper(BASE64_CREDENTIALS, true);
-    //TODO: Add server fingerprint to CircuitClient constructor
-    _http->setServerFingerprint(kSandBoxFingerprint);
+    _http = new HttpWrapper(_credentials, true);
+    _http->setServerFingerprint(_serverFingerprint);
     _http->setHttpClient(&http);
-    strcpy(_userId,"\0");
     _deleteAllWebHooks();
     _debug("HTTP server configured on port:");
     _debug(WEBSERVER_PORT);
@@ -65,13 +54,17 @@ void CircuitClient::setConversationId(string convId) {
 }
 
 int CircuitClient::postTextMessage(string textMessage) {
-    if (_convId.length() == 0) {
+    postTextMessage(textMessage, _convId);
+}
+
+int CircuitClient::postTextMessage(string textMessage, string convId) {
+    if (convId.length() == 0) {
         _debug("Cannot post message without conversation id");
         return -1;
     }
     _debug("Posting text message to circuit conversation...");
     string content = "{\"content\":\"" + textMessage + "\"}";
-    return _http->POST(_urlBuilder->getMessagesUrl(_convId), content);
+    return _http->POST(_urlBuilder->getMessagesUrl(convId), content);
 }
 
 void CircuitClient::setOnNewTextItemCallBack(void(*callback)(string)) {
@@ -89,7 +82,7 @@ void CircuitClient::setOnNewTextItemCallBack(void(*callback)(string)) {
     _http->POST(_urlBuilder->getWebHooksUrl(), content);
 }
 
-const char *CircuitClient::getUserPresence(char *userId) {
+const char *CircuitClient::getUserPresence(string userId) {
     _http->GET(_urlBuilder->getUserPresenceUrl(userId));
     string payload = _http->getPayload();
     StaticJsonDocument<1000> doc;
@@ -102,7 +95,7 @@ const char *CircuitClient::getUserPresence(char *userId) {
     return doc[0]["state"];
 }
 
-void CircuitClient::setOnUserPresenceChange(char* userId, void (*callback)(string) ) {
+void CircuitClient::setOnUserPresenceChange(string userId, void (*callback)(string) ) {
     _onUserPresenceChangeCB = callback;
     if (!_server_started) {
         _startServer();
@@ -130,8 +123,8 @@ void CircuitClient::_getUserProfile() {
             _debug(error.c_str());
             return;
         } else {
-            strncpy(_userId, doc["userId"], kUUIDLength-1);
-            if (!_userId) {
+            _userId = static_cast<const char *>(doc["userId"]);
+            if (_userId.length() == 0) {
                 _debug("UserId not found in profile");
                 return;
             }
@@ -176,8 +169,8 @@ void CircuitClient::_handleNewTextItem(void) {
             // Does the text item belong to the configured conversation?
             if (strncmp(_convId.c_str(), convId, strlen(_convId.c_str())) == 0) {
                 // Has the text item been created by other than me?
-                const char *creatorId = doc["item"]["creatorId"];
-                if (strncmp(_userId, creatorId, strlen(_userId)) != 0) {
+                string creatorId = static_cast<const char *>(doc["item"]["creatorId"]);
+                if (_userId.compare(creatorId) != 0) {
                     _debug("Received Text Item: ");
                     _debug(newText);
                     if (_onNewTextItemCB != NULL) {
