@@ -71,8 +71,7 @@ int CircuitClient::postTextMessage(string textMessage) {
     }
     _debug("Posting text message to circuit conversation...");
     string content = "{\"content\":\"" + textMessage + "\"}";
-    int httpCode = _http->POST(_urlBuilder->getMessagesUrl(_convId), content);
-    return httpCode;
+    return _http->POST(_urlBuilder->getMessagesUrl(_convId), content);
 }
 
 void CircuitClient::setOnNewTextItemCallBack(void(*callback)(string)) {

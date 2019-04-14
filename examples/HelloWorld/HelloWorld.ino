@@ -10,7 +10,7 @@
 Ticker ledTicker;
 
 // Circuit Client declaration
-CircuitClient circuitClient(CIRCUIT_DOMAIN, BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
+circuit::CircuitClient circuitClient(CIRCUIT_DOMAIN, BASE64_CREDENTIALS, CIRCUIT_CONV_ID);
 
 void ledTick() {
   int state = digitalRead(BUILTIN_LED);
