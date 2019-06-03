@@ -17,8 +17,7 @@
                     "/home/walter/Arduino/libraries/WiFiManager",
                     "/opt/arduino-1.8.9/hardware/esp8266com/esp8266/libraries/Ticker",
                     "/home/walter/Arduino/libraries/Adafruit_Unified_Sensor",
-                    "/home/walter/Arduino/libraries/DHT_sensor_library",
-                    "/home/walter/Arduino/libraries/Arduino-LiquidCrystal-I2C-library"
+                    "/home/walter/Arduino/libraries/DHT_sensor_library"
                 ]
             },
             "includePath": [
